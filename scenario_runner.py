@@ -136,8 +136,21 @@ class ScenarioRunner(object):
         if self.manager:
             self.manager.stop_scenario()
             self._cleanup()
-            if not self.manager.get_running_status():
+            if self.manager._watchdog is not None and not self.manager.get_running_status():
                 raise RuntimeError("Timeout occurred during scenario execution")
+
+        if signum == signal.SIGTERM:
+            exit(0)
+
+        if signum == signal.SIGINT:
+            print("Press Ctrl-C again in 3 seconds to shut down.")
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
+            try:
+                time.sleep(3)
+            except KeyboardInterrupt:
+                sys.exit(0)
+
+            signal.signal(signal.SIGINT, self._signal_handler)
 
     def _get_scenario_class_or_fail(self, scenario):
         """
